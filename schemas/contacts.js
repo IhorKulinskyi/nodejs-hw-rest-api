@@ -1,11 +1,11 @@
 const Joi = require("joi");
 
 const addSchema = Joi.object({
-  name: Joi.string().required(),
+  name: Joi.string(),
   email: Joi.string()
     .email({ minDomainSegments: 2, tlds: { allow: ["com", "net"] } })
-    .required(),
-  phone: Joi.string().required(),
+    ,
+  phone: Joi.string(),
 });
 
 module.exports = { addSchema };
