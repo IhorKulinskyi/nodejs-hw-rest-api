@@ -1,12 +1,16 @@
 const bcrypt = require("bcryptjs");
-
 const jwt = require("jsonwebtoken");
+const path = require("path");
+const gravatar = require("gravatar");
+const Jimp = require("jimp");
 
 const { SECRET_KEY } = process.env;
 
 const { User } = require("../models/users");
 
 const { HttpError, ctrlWrapper } = require("../helpers");
+
+const avatarsDir = path.join(__dirname, "../", "public", "avatars");
 
 const register = async (req, res) => {
   const { email, password } = req.body;
@@ -16,8 +20,13 @@ const register = async (req, res) => {
   }
 
   const hashPassword = await bcrypt.hash(password, 10);
+  const avatarUrl = gravatar.url(email);
 
-  const newUser = await User.create({ ...req.body, password: hashPassword });
+  const newUser = await User.create({
+    ...req.body,
+    password: hashPassword,
+    avatarUrl,
+  });
   res.status(201).json({
     user: {
       email: newUser.email,
@@ -71,9 +80,30 @@ const logOut = async (req, res) => {
   });
 };
 
+const updateAvatar = async (req, res) => {
+  const { _id } = req.user;
+  const { path: tempUpload, originalname } = req.file;
+  const fileName = `${_id}_${originalname}`;
+  const resultUpload = path.join(avatarsDir, fileName);
+  try {
+    const avatar = Jimp.read(tempUpload);
+    (await avatar).resize(250, 250).write(resultUpload);
+  } catch (error) {
+    console.error("Error resizing avatar:", error);
+    res.status(500).json({ error: "Failed to resize the avatar" });
+  }
+  const avatarUrl = path.join("avatars", fileName);
+  await User.findByIdAndUpdate(_id, { avatarUrl });
+
+  res.json({
+    avatarUrl,
+  });
+};
+
 module.exports = {
   register: ctrlWrapper(register),
   login: ctrlWrapper(login),
   getCurrent: ctrlWrapper(getCurrent),
   logOut: ctrlWrapper(logOut),
+  updateAvatar: ctrlWrapper(updateAvatar),
 };
