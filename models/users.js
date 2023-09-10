@@ -28,6 +28,14 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
+  verify: {
+    type: Boolean,
+    default: false,
+  },
+  verificationCode: {
+    type: String,
+    default: "",
+  },
 });
 
 userSchema.post("save", handleMongooseError);
